@@ -284,3 +284,39 @@ def mostra_tabella_pivot(df, titolo=None):
         }
     )
 
+def mostra_tabella_pivot_totaliriga(df, titolo=None):
+    if titolo:
+        st.subheader(titolo)
+
+    df = df.copy()
+
+    # Totale di riga
+    df["Totale"] = df.select_dtypes(include="number").sum(axis=1)
+
+    # Totale di colonna
+    totali_colonna = df.select_dtypes(include="number").sum()
+
+    # Aggiungo la riga Totale
+    df.loc["Totale"] = totali_colonna
+
+    # Grassetto sulla colonna Totale
+    df_styled = df.style.set_properties(
+        subset=["Totale"],
+        **{"font-weight": "bold"}
+    )
+
+    # Grassetto sulla riga Totale
+    df_styled = df_styled.set_properties(
+        subset=pd.IndexSlice[["Totale"], :],
+        **{"font-weight": "bold"}
+    )
+
+    st.dataframe(
+        df_styled,
+        use_container_width=True,
+        hide_index=False,
+        column_config={
+            col: st.column_config.Column(width="small")
+            for col in df.columns
+        }
+    )

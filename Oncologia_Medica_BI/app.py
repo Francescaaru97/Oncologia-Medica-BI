@@ -239,8 +239,8 @@ completa = df_finale.merge(
 )
 
 anno_corrente = datetime.now().year
-anno_default = anno_corrente - 1
-anni = sorted(completa["ANNO"].dropna().astype(int).unique())
+anno_default = anno_corrente 
+anni = sorted(completa["ANNO"].dropna().astype(int).unique(), reverse=True)
 
 df_filtrato = completa.copy()
 col1, col2, col3 = st.columns(3)
@@ -361,7 +361,7 @@ if page == "Dashboard":
         .tolist()
     )
     tabella_Linea = tabella_Linea.reindex(ordine_linea,fill_value=0)
-    f.mostra_tabella_pivot(tabella_Linea)
+    f.mostra_tabella_pivot_totaliriga(tabella_Linea)
 
 # Pivot per Stadio e per Mese ----------------------------------------------
     tabella_Stadio = pd.pivot_table(
@@ -420,28 +420,62 @@ if page == "Dashboard":
     )
 
     tabella_Sede = tabella_Sede.reindex(columns=ordine_mesi,fill_value=0)
-    # ordine_Sede = (df_filtrato[["Sede", "ORD SEDE"]]
-    #     .drop_duplicates()
-    #     .sort_values("ORD SEDE")
-    #     ["Sede"]
-    #     .tolist()
-    # )
-    # tabella_Sede = tabella_Sede.reindex(ordine_Sede,fill_value=0)
-    f.mostra_tabella_pivot(tabella_Sede)
+    f.mostra_tabella_pivot_totaliriga(tabella_Sede)
+
+# =====================================================================
+# DETTAGLIO SOTTOCATEGORIA
+# =====================================================================
 
 if page == "Dettaglio Sottocategoria": 
-
     tabella_Sottocategoria = pd.pivot_table(
         df_filtrato,
         index="Sottocategoria",
         columns="NOME_MESE",
         values="KEY_ABM",
         aggfunc="count",
+        fill_value=0,
+        margins=True,
+        margins_name="Totale"
+    )
+
+    # Ordine dei mesi + Totale alla fine
+    tabella_Sottocategoria = tabella_Sottocategoria.reindex(
+        columns=ordine_mesi + ["Totale"],
         fill_value=0
     )
 
-    tabella_Sottocategoria  = tabella_Sottocategoria .reindex(columns=ordine_mesi,fill_value=0)
-    st.dataframe(tabella_Sottocategoria, use_container_width=True, height=1300)
+    # Stile: grassetto per riga Totale e colonna Totale
+    tabella_styled = (
+        tabella_Sottocategoria.style
+        .set_properties(
+            subset=pd.IndexSlice[:, ["Totale"]],
+            **{"font-weight": "bold"}
+        )
+        .set_properties(
+            subset=pd.IndexSlice[["Totale"], :],
+            **{"font-weight": "bold"}
+        )
+    )
+
+    # Visualizzazione
+    st.dataframe(
+        tabella_styled,
+        use_container_width=True,
+        height=1400,
+        column_config={
+            # Prima colonna (indice Sottocategoria)
+            "_index": st.column_config.Column(
+                width=600
+            ),
+
+            # Colonne mesi e Totale
+            **{
+                col: st.column_config.Column(
+                    width=60
+                )
+                for col in tabella_Sottocategoria.columns
+            }
+        }
+    )
 
     st.write("")
-
