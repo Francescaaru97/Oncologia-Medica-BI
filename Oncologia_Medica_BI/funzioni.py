@@ -75,7 +75,7 @@ def load_dataset():
     diz_validitàriga = pd.read_excel("data/diz_validitàriga.xlsx")
 
     df_prime_visite = load_prime_visite()
-
+    
     # Join agenda
     amb_l_agenda = df_prime_visite.merge(
         diz_agende,
@@ -84,7 +84,7 @@ def load_dataset():
         how="left"
     )
 
-    # Join diagnosi
+    # Join agenda e diagnosi
     amb_agenda_l_diagnosi = amb_l_agenda.merge(
         diz_diagnosi1,
         left_on="DIAGNOSI_1LIV",
@@ -100,6 +100,7 @@ def load_dataset():
             else ("Non noto" if pd.isna(x) else "Esterno")
         )
 
+    #Ordinamento colonna INTERNO/ESTERNO (per tabella)
     amb_agenda_l_diagnosi["ORD INTERNO/ESTERNO"] = (
         amb_agenda_l_diagnosi["INTERNO/ESTERNO"].map({
             "Interno": 1,
@@ -110,7 +111,7 @@ def load_dataset():
 
     amb_agenda_l_diagnosi["Second Opinion"] = \
         amb_agenda_l_diagnosi["ALTRO_CENTRO"].apply(
-            lambda x: "Si"
+            lambda x: "SI"
             if pd.notna(x) and "NO - Second opinion" in str(x)
             else (
                 "Non Noto"
@@ -118,6 +119,30 @@ def load_dataset():
                 else "No"
             )
         )
+
+    #Ordinamento colonna SECOND OPINION (per tabella)
+    amb_agenda_l_diagnosi["ORD SECOND OPINION"] = (
+        amb_agenda_l_diagnosi["Second Opinion"].map({
+            "SI": 1,
+            "No": 2,
+            "Non noto": 3
+        })
+    )
+
+    #Ordinamento colonna Linea (per tabella)
+    amb_agenda_l_diagnosi["ORD LINEA"] = (
+        amb_agenda_l_diagnosi["LINEA"].map({
+            "1°": 1,
+            "2°": 2,
+            "3°": 3,
+            ">3°": 4,
+            "ADIUVANTE": 5,
+            "NEOADIUVANTE": 6,
+            "ALTRO": 7,
+            "FU": 8,
+            "NON NOTO": 9
+        })
+    )
 
     amb_agenda_l_diagnosi["Destinazione"] = \
         amb_agenda_l_diagnosi["PROSECUZIONE"].apply(
@@ -133,6 +158,17 @@ def load_dataset():
     amb_agenda_l_diagnosi["Studio"] = \
         amb_agenda_l_diagnosi["CANDIDATO_PROTOCOLLO"].fillna("Non Noto")
 
+    #Ordinamento colonna Studio (per tabella)
+    amb_agenda_l_diagnosi["ORD STUDIO"] = (
+        amb_agenda_l_diagnosi["Studio"].map({
+            "No": 1,
+            "Si, osservazionale biologico": 2,
+            "Si, pre-screening molecolare": 3,
+            "Si, terapeutico": 4,
+            "Non Noto": 5
+        })
+    )
+
     amb_agenda_l_diagnosi["Provenienza Fonte"] = \
         amb_agenda_l_diagnosi["QUERY"].apply(
             lambda x: "CUP prima visita"
@@ -140,8 +176,20 @@ def load_dataset():
             else "Maschera CCE"
         )
 
-    amb_agenda_l_diagnosi["Sede"] = \
-        amb_agenda_l_diagnosi.apply(calcola_sede, axis=1)
+    amb_agenda_l_diagnosi["Sede"] = amb_agenda_l_diagnosi.apply(calcola_sede, axis=1)
+
+    #Ordinamento colonna Sede (per tabella)
+    amb_agenda_l_diagnosi["ORD SEDE"] = (
+        amb_agenda_l_diagnosi["Sede"].map({
+            "Gastro-entero_bilio_pancreatica": 1,
+            "Genito-urinario": 2,
+            "Polmonare": 3,
+            "Melanoma": 4,
+            "Mammella": 5,
+            "Neuroendocrini": 6,
+            "Fase l": 7
+        })
+    )
 
     amb_agenda_l_diagnosi["Sottocategoria"] = \
         amb_agenda_l_diagnosi["DIAGNOSI_2LIV"].str.split("#").str[0]
@@ -181,9 +229,12 @@ def load_dataset():
         inplace=True
     )
 
+    finale["FK_CALENDARIO"] = finale["DATA_CUP"].fillna(finale["TIMESTAMPINSERT"])
+
     #normalizzo la DATA_CUP e TIMESTAMPINSERT
     finale["DATA_CUP"] = pd.to_datetime(finale["DATA_CUP"]).dt.normalize()
     finale["TIMESTAMPINSERT"] = pd.to_datetime(finale["TIMESTAMPINSERT"]).dt.normalize()
+    finale["FK_CALENDARIO"] = pd.to_datetime(finale["FK_CALENDARIO"]).dt.normalize()
 
     return finale 
 
@@ -210,8 +261,7 @@ df_calendario = load_calendario()
 
 #capire come forzare la prima colonna ad una grandezza esatta. in modo che tutte le tabelle siano allineate
 def mostra_tabella_pivot(df, titolo=None):
-    if titolo:
-        st.subheader(titolo)
+    if titolo:st.subheader(titolo)
 
     df = df.copy()
 

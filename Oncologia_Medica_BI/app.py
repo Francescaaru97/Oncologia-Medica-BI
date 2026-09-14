@@ -233,7 +233,7 @@ st.divider()
     
 completa = df_finale.merge(
     df_calendario,
-    left_on="DATA_CUP",
+    left_on="FK_CALENDARIO",
     right_on="DATA",
     how="left"
 )
@@ -285,13 +285,6 @@ if sede != "Tutte":
 # =====================================================================
 if page == "Dashboard": 
 
-# Tabella dati COMPLETI ---------------------------------------------------------
-    st.dataframe(df_filtrato,
-        use_container_width=True,
-        hide_index=True,
-        height=300
-    )
-
 # Pivot per FONTE e mese ---------------------------------------------------------
     tabellaFonte = pd.pivot_table(
         df_filtrato,
@@ -316,10 +309,21 @@ if page == "Dashboard":
     )
 
     tabella_INT_EST = tabella_INT_EST.reindex(columns=ordine_mesi,fill_value=0)
+    #ordinamento colonna INTERNO/ESTERNO per ORD INTERNO/ESTERNO
+    ordine_int_est = (
+        df_filtrato[
+            ["INTERNO/ESTERNO", "ORD INTERNO/ESTERNO"]
+        ]
+        .drop_duplicates()
+        .sort_values("ORD INTERNO/ESTERNO")
+        ["INTERNO/ESTERNO"]
+        .tolist()
+    )
+    tabella_INT_EST = tabella_INT_EST.reindex(ordine_int_est,fill_value=0)
     f.mostra_tabella_pivot(tabella_INT_EST)
 
 # Pivot per SECOND_OPINION e per Mese ----------------------------------------------
-    tabella_INT_EST = pd.pivot_table(
+    tabella_SECOND_OPINION = pd.pivot_table(
         df_filtrato,
         index="Second Opinion",
         columns="NOME_MESE",
@@ -328,8 +332,16 @@ if page == "Dashboard":
         fill_value=0
     )
 
-    tabella_INT_EST = tabella_INT_EST.reindex(columns=ordine_mesi,fill_value=0)
-    f.mostra_tabella_pivot(tabella_INT_EST)
+    #ordinamento colonna Second Opinion per colonna ORD SECOND OPINION
+    tabella_SECOND_OPINION = tabella_SECOND_OPINION.reindex(columns=ordine_mesi,fill_value=0)
+    ordine_second_opinion = (df_filtrato[["Second Opinion", "ORD SECOND OPINION"]]
+        .drop_duplicates()
+        .sort_values("ORD SECOND OPINION")
+        ["Second Opinion"]
+        .tolist()
+    )
+    tabella_SECOND_OPINION = tabella_SECOND_OPINION.reindex(ordine_second_opinion,fill_value=0)
+    f.mostra_tabella_pivot(tabella_SECOND_OPINION)
 
 # Pivot per VALORI_LINEA e per Mese ----------------------------------------------
     tabella_Linea = pd.pivot_table(
@@ -342,6 +354,13 @@ if page == "Dashboard":
     )
 
     tabella_Linea = tabella_Linea.reindex(columns=ordine_mesi,fill_value=0)
+    ordine_linea = (df_filtrato[["Linea", "ORD LINEA"]]
+        .drop_duplicates()
+        .sort_values("ORD LINEA")
+        ["Linea"]
+        .tolist()
+    )
+    tabella_Linea = tabella_Linea.reindex(ordine_linea,fill_value=0)
     f.mostra_tabella_pivot(tabella_Linea)
 
 # Pivot per Stadio e per Mese ----------------------------------------------
@@ -381,6 +400,13 @@ if page == "Dashboard":
     )
 
     tabella_Studio = tabella_Studio.reindex(columns=ordine_mesi,fill_value=0)
+    ordine_Studio = (df_filtrato[["Studio", "ORD STUDIO"]]
+        .drop_duplicates()
+        .sort_values("ORD STUDIO")
+        ["Studio"]
+        .tolist()
+    )
+    tabella_Studio = tabella_Studio.reindex(ordine_Studio,fill_value=0)
     f.mostra_tabella_pivot(tabella_Studio)
 
 # Pivot per Sede e per Mese ----------------------------------------------
@@ -394,6 +420,13 @@ if page == "Dashboard":
     )
 
     tabella_Sede = tabella_Sede.reindex(columns=ordine_mesi,fill_value=0)
+    # ordine_Sede = (df_filtrato[["Sede", "ORD SEDE"]]
+    #     .drop_duplicates()
+    #     .sort_values("ORD SEDE")
+    #     ["Sede"]
+    #     .tolist()
+    # )
+    # tabella_Sede = tabella_Sede.reindex(ordine_Sede,fill_value=0)
     f.mostra_tabella_pivot(tabella_Sede)
 
 if page == "Dettaglio Sottocategoria": 
