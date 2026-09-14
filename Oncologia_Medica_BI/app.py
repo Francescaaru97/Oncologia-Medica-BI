@@ -1,9 +1,11 @@
 import streamlit as st
-import oracledb
 from   pathlib import Path
 import pandas as pd
 import plotly.express as px
 from   datetime import datetime
+
+#py esterno
+import funzioni as f
 
 # =====================================================================
 # CONFIGURAZIONE STREAMLIT
@@ -34,252 +36,16 @@ def apply_styles():
 
 apply_styles()
 
-# =====================================================================
-# CONNESSIONE ORACLE
-# =====================================================================
-
-def get_oracle_connection():
-    oracledb.init_oracle_client(lib_dir=r"C:\Oracle\instantclient_23_0")
-    
-    return oracledb.connect(
-        user="DWH",
-        password="DWH",
-        dsn="10.4.128.12:1522/EXTBOARD"
-    )
-
-    # return oracledb.connect(
-    #     user="1",
-    #     password="2",
-    #     dsn="path/boh"
-    # )
-
-
-def calcola_sede(row):
-
-    if pd.notna(row["TIPOTUMORE"]):
-        return row["TIPOTUMORE"]
-    
-    if (
-        pd.notna(row["STANZA"])
-        and "BLOCCO E - SECONDO PIANO - STANZA 4" in str(row["STANZA"]).upper()
-    ):
-        return "Fase I"
-
-    if pd.notna(row["Valore Sede_x"]):
-        return row["Valore Sede_x"]
-    
-    if pd.notna(row["Valore Sede_y"]):
-        return row["Valore Sede_y"]
-    return "Completare Dizionario"
-
-@st.cache_data(ttl=300)
-def load_prime_visite():
-    connection = get_oracle_connection()
-    try:
-        df = pd.read_sql("""
-            SELECT  \
-            KEY_ABM, QUERY, DATA_CUP, TIMESTAMPINSERT,  \
-            DS_PRESTAZIONE, NUMERO_PRENOTAZIONE,   \
-            STANZA, CD_AGENDA, RECID,  IDANAG, MODULO_CCE, VISITNUMBER,   \
-            AUTHOR_INSERT,  \
-            case when "stadio_malattia" is null then 'Non noto' \
-                 when "stadio_malattia" = '' then 'Non noto' \
-            else "stadio_malattia" end as STADIO_MALATTIA ,  \
-            CASE WHEN TIPOTUMORE = 'Gastroenterica' THEN 'Gastro-entero-bilio-pancreatica'  \
-            WHEN TIPOTUMORE = 'Fegato e vie biliari' THEN 'Gastro-entero-bilio-pancreatica'  \
-            ELSE TIPOTUMORE end as TIPOTUMORE,  \
-            DIAGNOSI_1LIV, DIAGNOSI_2LIV,  \
-            case when LINEA is null then 'Non noto' \
-                 when LINEA = '' then 'Non noto' \
-            else LINEA end as LINEA,  \
-            PROVENIENZA, ALTRO_CENTRO, ALTRO_CENTRO_DES, PROSECUZIONE, \
-            CANDIDATO_PROTOCOLLO, NUM_PROTOCOLLO  \
-            FROM DWH.STOR_ABM_PRIMEVISITE
-            """
-            ,
-            connection
-        )
-        return df
-    finally:
-        connection.close()
-
-# =====================================================================
-# CARICAMENTO DATI
-# =====================================================================
-
-@st.cache_data
-def load_dataset():
-
-    connection = get_oracle_connection()
-
-    try:
-        df_prime_visite = load_prime_visite()
-
-    finally:
-        connection.close()
-
-    # Dizionari
-    diz_agende = pd.read_excel("data/diz_agende.xlsx")
-    diz_diagnosi1 = pd.read_excel("data/diz_diagnosi1.xlsx")
-    diz_validitàriga = pd.read_excel("data/diz_validitàriga.xlsx")
-
-    # Join agenda
-    amb_l_agenda = df_prime_visite.merge(
-        diz_agende,
-        left_on="CD_AGENDA",
-        right_on="Agenda",
-        how="left"
-    )
-
-    # Join diagnosi
-    amb_agenda_l_diagnosi = amb_l_agenda.merge(
-        diz_diagnosi1,
-        left_on="DIAGNOSI_1LIV",
-        right_on="Diagnosi 1 ",
-        how="left"
-    )
-
-    # Trasformazioni
-    amb_agenda_l_diagnosi["INTERNO/ESTERNO"] = \
-        amb_agenda_l_diagnosi["PROVENIENZA"].apply(
-            lambda x: "Interno"
-            if x == "INT"
-            else ("Non noto" if pd.isna(x) else "Esterno")
-        )
-
-    amb_agenda_l_diagnosi["Second Opinion"] = \
-        amb_agenda_l_diagnosi["ALTRO_CENTRO"].apply(
-            lambda x: "Si"
-            if pd.notna(x) and "NO - Second opinion" in str(x)
-            else (
-                "Non Noto"
-                if pd.isna(x) or str(x).strip() == ""
-                else "No"
-            )
-        )
-
-    amb_agenda_l_diagnosi["Destinazione"] = \
-        amb_agenda_l_diagnosi["PROSECUZIONE"].apply(
-            lambda x: "Altrove"
-            if pd.notna(x) and "ALTROVE" in str(x).upper()
-            else (
-                "INT"
-                if pd.notna(x) and "INT" in str(x).upper()
-                else "Non Noto"
-            )
-        )
-
-    amb_agenda_l_diagnosi["Studio"] = \
-        amb_agenda_l_diagnosi["CANDIDATO_PROTOCOLLO"].fillna("Non Noto")
-
-    amb_agenda_l_diagnosi["Provenienza Fonte"] = \
-        amb_agenda_l_diagnosi["QUERY"].apply(
-            lambda x: "CUP prima visita"
-            if x == 4
-            else "Maschera CCE"
-        )
-
-    amb_agenda_l_diagnosi["Sede"] = \
-        amb_agenda_l_diagnosi.apply(calcola_sede, axis=1)
-
-    amb_agenda_l_diagnosi["Sottocategoria"] = \
-        amb_agenda_l_diagnosi["DIAGNOSI_2LIV"].str.split("#").str[0]
-
-    amb_agenda_l_diagnosi["FK_SedeSottocategoria"] = (
-        amb_agenda_l_diagnosi["Sede"].fillna("")
-        + "_"
-        + amb_agenda_l_diagnosi["Sottocategoria"].fillna("")
-    )
-
-    finale = amb_agenda_l_diagnosi.merge(
-        diz_validitàriga,
-        left_on="FK_SedeSottocategoria",
-        right_on="Key_Val_Riga",
-        how="left"
-    )
-
-    finale["Valore_Validità"] = \
-        finale["Valore_Validità"].fillna("Non Noto")
-
-    finale.rename(
-        columns={
-            "LINEA": "Linea",
-            "PROVENIENZA": "Provenienza",
-            "STADIO_MALATTIA": "Stadio",
-            "Valore_Validità": "Valore_Validità_Riga"
-        },
-        inplace=True
-    )
-
-    finale.drop(
-        columns=[
-            "Valore Sede_x",
-            "Valore Sede_y"
-        ],
-        errors="ignore",
-        inplace=True
-    )
-
-    #normalizzo la DATA_CUP e TIMESTAMPINSERT
-    finale["DATA_CUP"] = pd.to_datetime(finale["DATA_CUP"]).dt.normalize()
-    finale["TIMESTAMPINSERT"] = pd.to_datetime(finale["TIMESTAMPINSERT"]).dt.normalize()
-
-    return finale 
-df_finale = load_dataset()
-
-
-def load_calendario():
-    calendario = pd.DataFrame({
-        "DATA": pd.date_range(
-            start="2024-12-01",
-            end="2035-12-31",
-            freq="D"
-        )
-    })
-
-    calendario["ANNO"] = calendario["DATA"].dt.year
-    calendario["MESE"] = calendario["DATA"].dt.month
-    calendario["NOME_MESE"] = calendario["DATA"].dt.month_name(locale="it_IT")
-    calendario["TRIMESTRE"] = calendario["DATA"].dt.quarter
-
-    calendario["DATA"] = pd.to_datetime(calendario["DATA"]).dt.normalize()
-    return calendario
-
-df_calendario = load_calendario()
-
-#capire come forzare la prima colonna ad una grandezza esatta. in modo che tutte le tabelle siano allineate
-def mostra_tabella_pivot(df, titolo=None):
-    if titolo:
-        st.subheader(titolo)
-
-    df = df.copy()
-
-    # Totale di riga
-    df["Totale"] = df.select_dtypes(include="number").sum(axis=1)
-
-    # Grassetto sulla colonna Totale
-    df_styled = df.style.set_properties(
-        subset=["Totale"],
-        **{"font-weight": "bold"}
-    )
-
-    st.dataframe(
-        df_styled,
-        use_container_width=True,
-        hide_index=False,
-        column_config={
-            col: st.column_config.Column(width="small")
-            for col in df.columns
-        }
-    )
-
+#creo le due tabelle
+df_finale = f.load_dataset()
+df_calendario = f.load_calendario()
 
 # =====================================================================
 # AUTENTICAZIONE UTENTE
 # =====================================================================
 
 def authenticate_user(username, password):
-    connection = get_oracle_connection()
+    connection = f.get_oracle_connection()
     try:
         cursor = connection.cursor()
         cursor.execute(
@@ -462,10 +228,9 @@ st.title("Oncologia Medica BI")
 st.divider()
 
 # =====================================================================
-# DASHBOARD
+# CREAZIONE TABELLA COMPLETA
 # =====================================================================
-
-#if page == "Dashboard":
+    
 completa = df_finale.merge(
     df_calendario,
     left_on="DATA_CUP",
@@ -508,18 +273,20 @@ with col3:
         ["Tutte"] + sorted(completa["Sede"].dropna().unique())
     )
 
-# Applicazione filtri
+    # Applicazione filtri
 df_filtrato = df_filtrato[df_filtrato["ANNO"] == anno]
 if mese != "Tutti":
     df_filtrato = df_filtrato[df_filtrato["NOME_MESE"] == mese]
 if sede != "Tutte":
     df_filtrato = df_filtrato[df_filtrato["Sede"] == sede]
 
-if page == "Dashboard":
+# =====================================================================
+# DASHBOARD
+# =====================================================================
+if page == "Dashboard": 
 
 # Tabella dati COMPLETI ---------------------------------------------------------
-    st.dataframe(
-        df_filtrato,
+    st.dataframe(df_filtrato,
         use_container_width=True,
         hide_index=True,
         height=300
@@ -536,7 +303,7 @@ if page == "Dashboard":
     )
 
     tabellaFonte = tabellaFonte.reindex(columns=ordine_mesi,fill_value=0)
-    mostra_tabella_pivot(tabellaFonte)
+    f.mostra_tabella_pivot(tabellaFonte)
 
 # Pivot per INTERNO/ESTERNO e per Mese ----------------------------------------------
     tabella_INT_EST = pd.pivot_table(
@@ -549,7 +316,7 @@ if page == "Dashboard":
     )
 
     tabella_INT_EST = tabella_INT_EST.reindex(columns=ordine_mesi,fill_value=0)
-    mostra_tabella_pivot(tabella_INT_EST)
+    f.mostra_tabella_pivot(tabella_INT_EST)
 
 # Pivot per SECOND_OPINION e per Mese ----------------------------------------------
     tabella_INT_EST = pd.pivot_table(
@@ -562,7 +329,7 @@ if page == "Dashboard":
     )
 
     tabella_INT_EST = tabella_INT_EST.reindex(columns=ordine_mesi,fill_value=0)
-    mostra_tabella_pivot(tabella_INT_EST)
+    f.mostra_tabella_pivot(tabella_INT_EST)
 
 # Pivot per VALORI_LINEA e per Mese ----------------------------------------------
     tabella_Linea = pd.pivot_table(
@@ -575,7 +342,7 @@ if page == "Dashboard":
     )
 
     tabella_Linea = tabella_Linea.reindex(columns=ordine_mesi,fill_value=0)
-    mostra_tabella_pivot(tabella_Linea)
+    f.mostra_tabella_pivot(tabella_Linea)
 
 # Pivot per Stadio e per Mese ----------------------------------------------
     tabella_Stadio = pd.pivot_table(
@@ -588,7 +355,7 @@ if page == "Dashboard":
     )
 
     tabella_Stadio = tabella_Stadio.reindex(columns=ordine_mesi,fill_value=0)
-    mostra_tabella_pivot(tabella_Stadio)
+    f.mostra_tabella_pivot(tabella_Stadio)
 
 # Pivot per Destinazione e per Mese ----------------------------------------------
     tabella_Destinazione = pd.pivot_table(
@@ -601,7 +368,7 @@ if page == "Dashboard":
     )
 
     tabella_Destinazione = tabella_Destinazione.reindex(columns=ordine_mesi,fill_value=0)
-    mostra_tabella_pivot(tabella_Destinazione)
+    f.mostra_tabella_pivot(tabella_Destinazione)
 
 # Pivot per Studio e per Mese ----------------------------------------------
     tabella_Studio = pd.pivot_table(
@@ -614,7 +381,7 @@ if page == "Dashboard":
     )
 
     tabella_Studio = tabella_Studio.reindex(columns=ordine_mesi,fill_value=0)
-    mostra_tabella_pivot(tabella_Studio)
+    f.mostra_tabella_pivot(tabella_Studio)
 
 # Pivot per Sede e per Mese ----------------------------------------------
     tabella_Sede = pd.pivot_table(
@@ -627,7 +394,7 @@ if page == "Dashboard":
     )
 
     tabella_Sede = tabella_Sede.reindex(columns=ordine_mesi,fill_value=0)
-    mostra_tabella_pivot(tabella_Sede)
+    f.mostra_tabella_pivot(tabella_Sede)
 
 if page == "Dettaglio Sottocategoria": 
 
@@ -641,7 +408,7 @@ if page == "Dettaglio Sottocategoria":
     )
 
     tabella_Sottocategoria  = tabella_Sottocategoria .reindex(columns=ordine_mesi,fill_value=0)
-    mostra_tabella_pivot(tabella_Sottocategoria)
+    st.dataframe(tabella_Sottocategoria, use_container_width=True, height=1300)
 
     st.write("")
 
