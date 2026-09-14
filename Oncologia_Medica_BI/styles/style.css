@@ -1,0 +1,106 @@
+:root {
+    --bg: #fcf7dd;
+    --panel: #fcf7dd;
+    --panel-soft: #fcf7dd;
+    --ink: #4a5b5f;
+    --soft: #4f5f59;
+    --line: #e9deb0;
+    --accent: #625c47;
+    --accent-light: #d5cca2;
+    --green: #1d6036;
+    --red: #c46438;
+    --gold: #d6ac43;
+    --blue: #2879a7;
+    --purple: #7450a8;
+}
+
+header[data-testid="stHeader"] {
+    background: transparent !important;
+}
+
+.stApp {
+    background: radial-gradient(
+        1300px 750px at 85% -10%,
+        #fcf7dd 0%,
+        #f6c770 35%,
+        var(--bg) 75%
+    ) fixed;
+
+    color: #000001
+}
+
+h1,h2,h3 {
+    color: var(--ink);
+}
+
+.kpi {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow:
+        0 2px 5px rgba(40, 50, 40, .05),
+        0 8px 20px rgba(40, 50, 40, .04);
+}
+
+.badge {
+    display: inline-block;
+    padding: 3px 8px;
+    margin: 2px 3px 2px 0;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--panel-soft);
+}
+
+.badge-red {
+    color: #8f241b;
+    border-color: #e7b9b4;
+    background: #fff4f2;
+}
+
+.badge-green {
+    color: #176b34;
+    border-color: #efdb82;
+    background: #effaf2;
+}
+
+.badge-blue {
+    color: #175d8d;
+    border-color: #b9d4e8;
+    background: #f0f7fb;
+}
+
+.badge-gold {
+    color: #7b5a08;
+    border-color: #e7d59a;
+    background: #fff9e8;
+}
+
+.badge-purple {
+    color: #5a3485;
+    border-color: #d5c5e7;
+    background: #f7f2fb;
+}
+
+-- BARRA DI LATO
+section[data-testid="stSidebar"] {
+    background: #fcf7dd;
+    border-right: 1px solid var(--line);
+}
+
+hr {
+    border-color: var(--line) !important;
+}
+
+.stButton > button {
+    border-radius: 9px;
+    border: 1px solid #ede1a5;
+    background: var(--panel);
+    color: var(--accent);
+}
+
+.stButton > button:hover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+    color: var(--accent);
+}
