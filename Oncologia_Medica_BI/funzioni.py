@@ -259,9 +259,9 @@ def load_calendario():
 df_calendario = load_calendario()
 
 
-#capire come forzare la prima colonna ad una grandezza esatta. in modo che tutte le tabelle siano allineate
 def mostra_tabella_pivot(df, titolo=None):
-    if titolo:st.subheader(titolo)
+    if titolo:
+        st.subheader(titolo)
 
     df = df.copy()
 
@@ -274,15 +274,21 @@ def mostra_tabella_pivot(df, titolo=None):
         **{"font-weight": "bold"}
     )
 
+    # Larghezze colonne
+    column_config = {
+        "_index": st.column_config.Column(width=250)
+    }
+
+    for col in df.columns:
+        column_config[col] = st.column_config.Column(width=60)
+
     st.dataframe(
         df_styled,
         use_container_width=True,
         hide_index=False,
-        column_config={
-            col: st.column_config.Column(width="small")
-            for col in df.columns
-        }
+        column_config=column_config
     )
+
 
 def mostra_tabella_pivot_totaliriga(df, titolo=None):
     if titolo:
@@ -311,12 +317,18 @@ def mostra_tabella_pivot_totaliriga(df, titolo=None):
         **{"font-weight": "bold"}
     )
 
+    # Larghezze colonne
+    column_config = {
+        "_index": st.column_config.Column(width=250)
+    }
+
+    for col in df.columns:
+        column_config[col] = st.column_config.Column(width=60)
+
     st.dataframe(
         df_styled,
         use_container_width=True,
         hide_index=False,
-        column_config={
-            col: st.column_config.Column(width="small")
-            for col in df.columns
-        }
+        column_config=column_config
     )
+

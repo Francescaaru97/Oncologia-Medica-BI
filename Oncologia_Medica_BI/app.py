@@ -103,7 +103,7 @@ if "email" not in st.session_state:
 # =====================================================================
 
 if not st.session_state.authenticated:
-    st.markdown("<br><br>", unsafe_allow_html=True)
+    #st.markdown('<div class="login-box">', unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 2, 1])
 
     with col2:
@@ -173,7 +173,7 @@ with st.sidebar:
     st.divider()
 
     if st.session_state.page != "Dettaglio ricovero":
-        st.markdown("**Pagine**")
+        st.markdown('<div class="sidebar-section-title">Pagine</div><br>',unsafe_allow_html=True)
         page = st.radio(
             "",
             ["Dashboard", "Dettaglio Sottocategoria"],
@@ -185,10 +185,10 @@ with st.sidebar:
     page = st.session_state.page
 
 # ---------------------------------------------------------------
-# INFORMAZIONI UTENTE
+# INFORMAZIONI UTENTE -> UTENTE CONNESSO
 # ---------------------------------------------------------------
 
-    st.markdown("**Utente connesso**")
+    st.markdown('<div class="sidebar-section-title">Utente connesso</div><br>',unsafe_allow_html=True)
 
     nome_visualizzato = (
         f"{st.session_state.first_name or ''} "
@@ -203,7 +203,6 @@ with st.sidebar:
     st.caption(f"Username: {st.session_state.username}")
     st.caption(f"Ruolo: {st.session_state.role}")
     st.divider()
-
 
     # ---------------------------------------------------------------
     # LOGOUT
@@ -403,8 +402,7 @@ if page == "Dashboard":
     ordine_Studio = (df_filtrato[["Studio", "ORD STUDIO"]]
         .drop_duplicates()
         .sort_values("ORD STUDIO")
-        ["Studio"]
-        .tolist()
+        ["Studio"].tolist()
     )
     tabella_Studio = tabella_Studio.reindex(ordine_Studio,fill_value=0)
     f.mostra_tabella_pivot(tabella_Studio)

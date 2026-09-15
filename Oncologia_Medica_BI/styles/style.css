@@ -5,8 +5,8 @@
     --ink: #4a5b5f;
     --soft: #4f5f59;
     --line: #e9deb0;
-    --accent: #625c47;
-    --accent-light: #d5cca2;
+    --accent: #585240;
+    --accent-light: #e8daa6;
     --green: #1d6036;
     --red: #c46438;
     --gold: #d6ac43;
@@ -14,9 +14,19 @@
     --purple: #7450a8;
 }
 
+
+/* ==========================================
+   HEADER
+========================================== */
+
 header[data-testid="stHeader"] {
     background: transparent !important;
 }
+
+
+/* ==========================================
+   SFONDO APP
+========================================== */
 
 .stApp {
     background: radial-gradient(
@@ -26,12 +36,24 @@ header[data-testid="stHeader"] {
         var(--bg) 75%
     ) fixed;
 
-    color: #000001
+    color: #000001;
 }
 
-h1,h2,h3 {
+
+/* ==========================================
+   TITOLI
+========================================== */
+
+h1,
+h2,
+h3 {
     color: var(--ink);
 }
+
+
+/* ==========================================
+   KPI
+========================================== */
 
 .kpi {
     background: var(--panel);
@@ -43,54 +65,79 @@ h1,h2,h3 {
         0 8px 20px rgba(40, 50, 40, .04);
 }
 
-.badge {
-    display: inline-block;
-    padding: 3px 8px;
-    margin: 2px 3px 2px 0;
-    border-radius: 999px;
-    border: 1px solid var(--line);
-    background: var(--panel-soft);
-}
 
-.badge-red {
-    color: #8f241b;
-    border-color: #e7b9b4;
-    background: #fff4f2;
-}
+/* ==========================================
+   SIDEBAR
+========================================== */
 
-.badge-green {
-    color: #176b34;
-    border-color: #efdb82;
-    background: #effaf2;
-}
-
-.badge-blue {
-    color: #175d8d;
-    border-color: #b9d4e8;
-    background: #f0f7fb;
-}
-
-.badge-gold {
-    color: #7b5a08;
-    border-color: #e7d59a;
-    background: #fff9e8;
-}
-
-.badge-purple {
-    color: #5a3485;
-    border-color: #d5c5e7;
-    background: #f7f2fb;
-}
-
--- BARRA DI LATO
 section[data-testid="stSidebar"] {
-    background: #fcf7dd;
-    border-right: 1px solid var(--line);
+    background-color: #2d2725 !important;
 }
 
-hr {
+section[data-testid="stSidebar"] > div {
+    background-color: #2d2725 !important;
+}
+
+section[data-testid="stSidebar"] > div > div {
+    background-color: #2d2725 !important;
+}
+
+
+/* ==========================================
+   SIDEBAR - TESTO BIANCO
+========================================== */
+
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] span,
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] h1,
+section[data-testid="stSidebar"] h2,
+section[data-testid="stSidebar"] h3,
+section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"],
+section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+section[data-testid="stSidebar"] [data-testid="stCaptionContainer"],
+section[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {
+    color: #ffffff !important;
+}
+
+
+/* ==========================================
+   SIDEBAR - DIVIDER
+========================================== */
+
+section[data-testid="stSidebar"] hr {
     border-color: var(--line) !important;
 }
+
+/* ==========================================
+   SIDEBAR - BOTTONE ESCI
+========================================== */
+
+section[data-testid="stSidebar"] .stButton > button {
+    color: #000000 !important;
+    background-color: var(--panel) !important;
+    border: 1px solid #ede1a5 !important;
+}
+
+section[data-testid="stSidebar"] .stButton > button p,
+section[data-testid="stSidebar"] .stButton > button span {
+    color: #000000 !important;
+}
+
+section[data-testid="stSidebar"] .stButton > button:hover {
+    color: #000000 !important;
+    background-color: var(--accent-light) !important;
+    border: 1px solid #ede1a5 !important;
+}
+
+section[data-testid="stSidebar"] .stButton > button:hover p,
+section[data-testid="stSidebar"] .stButton > button:hover span {
+    color: #000000 !important;
+}
+
+/* ==========================================
+   PULSANTI GENERALI
+========================================== */
 
 .stButton > button {
     border-radius: 9px;
@@ -103,4 +150,64 @@ hr {
     border-color: var(--accent);
     background: var(--accent-light);
     color: var(--accent);
+}
+
+/* ==========================================
+   SIDEBAR - DIMENSIONE TESTI
+========================================== */
+
+section[data-testid="stSidebar"] h2 {
+    font-size: 24px !important;
+}
+
+/* ==========================================
+   SIDEBAR - SEZIONE PAGINE
+========================================== */
+
+/* Titolo "Pagine" */
+section[data-testid="stSidebar"] .sidebar-section-title {
+    color: #ede1a5 !important;
+    font-size: 20px !important;
+    font-weight: 700 !important;
+}
+
+
+/* Voci del menu Pagine */
+section[data-testid="stSidebar"] [role="radiogroup"] label,
+section[data-testid="stSidebar"] [role="radiogroup"] label p,
+section[data-testid="stSidebar"] [role="radiogroup"] label span {
+    color: #ede1a5 !important;
+    font-weight: 600 !important;
+}
+
+/* ==========================================
+   LOGIN - CAMPI USERNAME E PASSWORD
+========================================== */
+
+div[data-testid="stTextInput"] input {
+    background-color: #fbfaf6 !important;
+    color: #5f4e4a !important;
+    border: 1px solid #e9deb0 !important;
+    border-radius: 9px !important;
+}
+
+
+/* Colore del placeholder */
+div[data-testid="stTextInput"] input::placeholder {
+    color: #8a8270 !important;
+    opacity: 1 !important;
+}
+
+
+/* Quando clicchi dentro il campo */
+div[data-testid="stTextInput"] input:focus {
+    background-color: #fbfaf6 !important;
+    border-color: #d6ac43 !important;
+    box-shadow: 0 0 0 1px #d6ac43 !important;
+}
+
+/* Allarga il contenuto centrale */
+.block-container {
+    max-width: 2500px !important;
+    padding-top: 5rem !important;
 }
